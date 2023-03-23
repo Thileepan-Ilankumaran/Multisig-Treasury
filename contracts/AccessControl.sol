@@ -5,13 +5,12 @@ contract AccessControl {
     address public superadmin;
     address[] public owners;
     mapping(address => bool) isOwner;
-    uint256 quroum;
 
-    event Confirmation(address indexed sender, uint256 indexed transactionId);
-    event Revocation(address indexed sender, uint256 indexed transactionId);
-    event Submission(uint256 indexed transactionId);
-    event Execution(uint256 indexed transactionId);
-    event ExecutionFailure(uint256 indexed transactionId);
+    event Confirmation(address indexed sender, uint256 indexed proposalId);
+    event Revocation(address indexed sender, uint256 indexed proposalId);
+    event Submission(uint256 indexed proposalId);
+    event Execution(uint256 indexed proposalId);
+    event ExecutionFailure(uint256 indexed proposalId);
     event Deposit(address indexed sender, uint256 value);
     event OwnerAddition(address indexed owner);
     event OwnerRemoval(address indexed owner);
@@ -40,6 +39,7 @@ contract AccessControl {
     constructor(address[] memory _owners) {
         superadmin = msg.sender;
         require(owners.length >= 4, "Atleast 4 owners required");
+        _owners = owners;
     }
 
     function addOwner(
