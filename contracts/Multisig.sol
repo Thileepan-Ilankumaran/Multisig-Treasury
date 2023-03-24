@@ -10,14 +10,15 @@ contract Multisig is AccessControl {
         bool approved;
     }
     uint public proposalCount;
-    mapping(uint256 => mapping(address => bool)) public hasVoted;
+    mapping(address => bool) public hasVoted;
     mapping(uint256 => mapping(address => bool)) public confirmations;
     mapping(uint => Proposal) proposals;
 
+    Proposal[] totalProposals;
     Proposal[] validProposals;
 
-    modifier onlyOwner(address owner) {
-        require(isOwner[owner] == true, "Only owner can call this function");
+    modifier onlyOwner(address _owners) {
+        require(isOwner[_owners] == true, "Only owner can call this function");
         _;
     }
 
@@ -29,21 +30,9 @@ contract Multisig is AccessControl {
     //     _;
     // }
 
-    modifier isVoted(uint proposalId, address owner) {
-        require(hasVoted[proposalId][owner] == false, "Already Voted");
+    modifier isVoted(uint proposalId, address _owners) {
+        require(hasVoted[_owners] == false, "Already Voted");
         _;
-    }
-
-    fallback() external payable {
-        if (msg.value > 0) {
-            emit Deposit(msg.sender, msg.value);
-        }
-    }
-
-    receive() external payable {
-        if (msg.value > 0) {
-            emit Deposit(msg.sender, msg.value);
-        }
     }
 
     constructor(address[] memory _owners) AccessControl(_owners) {}
@@ -60,35 +49,27 @@ contract Multisig is AccessControl {
             proposal: _proposal,
             approved: false
         });
-
+        totalProposals.push(proposals[proposalId]);
         proposalCount += 1;
         emit Submission(proposalId);
     }
 
-    function approval(uint proposalId, address recipient) public onlyAdmin {
+    function approval(uint proposalId) public onlyAdmin {
         require(
-            confirmations[proposalId][recipient] == false,
+            validProposals[proposalId].approved == false,
             "Already approved"
         );
-        confirmations[proposalId][recipient] = true;
-        proposals.push;
-    }
-
-    function revoke(
-        uint proposalId,
-        address recipient
-    ) public onlyAdmin returns (bool _confirmations) {
-        require(
-            confirmations[proposalId][recipient] == true,
-            "Not approved yet"
-        );
-        return confirmations[proposalId][recipient] = false;
+        validProposals.push(proposals[proposalId]);
+        validProposals[proposalId].approved = true;
+        // confirmations[proposalId][recipient] = true;
     }
 
     function voting(
         uint proposalId,
-        address owner
+        address _owners
     ) public onlyOwner(msg.sender) isVoted(proposalId, msg.sender) {
-        hasVoted[proposalId][owner] = true;
+        hasVoted[_owners] = true;
     }
+
+    function execute() public {}
 }
