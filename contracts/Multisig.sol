@@ -35,11 +35,29 @@ contract Multisig is AccessControl {
         _;
     }
 
+    constructor(address[] memory _owners) AccessControl(_owners) {}
+
+    function donate() public payable {
+        if (msg.value > 0) {
+            emit Donate(msg.sender, msg.value);
+        }
+    }
+
+    fallback() external payable {
+        if (msg.value > 0) {
+            emit Donate(msg.sender, msg.value);
+        }
+    }
+
+    receive() external payable {
+        emit Donate(msg.sender, msg.value);
+    }
+
     function createProposal(
         address _recipent,
         uint _value,
         string memory _proposal
-    ) public payable returns (uint256 proposalId) {
+    ) public notNull(_recipent) returns (uint256 proposalId) {
         proposalId = proposalCount;
         proposals[proposalId] = Proposal({
             recipient: _recipent,
@@ -49,40 +67,61 @@ contract Multisig is AccessControl {
         });
         totalProposals.push(proposals[proposalId]);
         proposalCount += 1;
+        emit CreatedProposal(proposalId);
     }
 
     function approval(uint proposalId) public isApproved(proposalId) onlyAdmin {
         proposalId = proposalCount;
         totalProposals[proposalId].approved = true;
+        emit Approval(proposalId);
     }
 
     function voting(
         uint proposalId,
-        address owners
-    ) public isVoted(proposalId, msg.sender) onlyOwner(msg.sender) {
+        address owner
+    )
+        public
+        isVoted(proposalId, msg.sender)
+        notNull(owner)
+        onlyOwner(msg.sender)
+    {
         require(
             totalProposals[proposalId].approved == true,
             "Only approved proposals can be voted"
         );
-        hasVoted[proposalId][owners] = true;
+        hasVoted[proposalId][owner] = true;
         votes[proposalId]++;
         votesCount++;
-        execute();
+        emit Voting(msg.sender, proposalId);
     }
 
-    function execute() public {
-        //winning proposal
+    function execute() public onlyAdmin onlyOwner(msg.sender) {
         uint winner = votes[0];
+        uint winnerProposalId = 0;
+        //all owners should vote
+        for (uint i = 0; i < owners.length; i++) {
+            if (hasVoted[winnerProposalId][owners[i]] == false) {
+                emit ExecutionFailure(owners[i]);
+                return;
+            }
+        }
+        //winning proposal
         for (uint i = 0; i < proposalCount; i++) {
             if (votes[i] > winner) {
                 winner = votes[i];
+                winnerProposalId = i;
             }
         }
+
         //51%
         uint num = votesCount * 51;
         uint quorum = num / 100;
-
         require(winner >= quorum, "Atleast 51% votes required to execute");
+
         //withdraw
+        Proposal storage winningProposal = totalProposals[winnerProposalId];
+        require(winningProposal.approved == true, "Not approved by SuperAdmin");
+        payable(winningProposal.recipient).transfer(address(this).balance);
+        emit Execution(winnerProposalId);
     }
 }

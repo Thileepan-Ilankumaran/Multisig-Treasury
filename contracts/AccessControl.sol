@@ -3,15 +3,15 @@ pragma solidity ^0.8.17;
 
 contract AccessControl {
     address public superadmin;
-    address[] public owners;
+    address[] public owners = [superadmin];
     mapping(address => bool) isOwner;
 
-    event Confirmation(address indexed sender, uint256 indexed proposalId);
-    event Revocation(address indexed sender, uint256 indexed proposalId);
-    event Submission(uint256 indexed proposalId);
+    event CreatedProposal(uint256 indexed proposalId);
+    event Approval(uint256 indexed proposalId);
+    event Voting(address indexed owner, uint256 indexed proposalId);
     event Execution(uint256 indexed proposalId);
-    event ExecutionFailure(uint256 indexed proposalId);
-    event Deposit(address indexed sender, uint256 value);
+    event ExecutionFailure(address indexed owner);
+    event Donate(address indexed sender, uint256 amount);
     event OwnerAddition(address indexed owner);
     event OwnerRemoval(address indexed owner);
     event AdminTransfer(address indexed newAdmin);
