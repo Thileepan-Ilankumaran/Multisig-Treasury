@@ -3,13 +3,13 @@ pragma solidity ^0.8.17;
 
 contract AccessControl {
     address public superadmin;
-    address[] public owners = [superadmin];
+    address[] public owners;
     mapping(address => bool) isOwner;
 
-    event CreatedProposal(uint256 indexed proposalId);
-    event Approval(uint256 indexed proposalId);
-    event Voting(address indexed owner, uint256 indexed proposalId);
-    event Execution(uint256 indexed proposalId);
+    event CreatedProposal(uint256 indexed _proposalCount);
+    event Approval(uint256 indexed _proposalCount);
+    event Voting(address indexed owner, uint256 indexed _proposalCount);
+    event Execution(uint256 indexed _proposalCount);
     event ExecutionFailure(address indexed owner);
     event Donate(address indexed sender, uint256 amount);
     event OwnerAddition(address indexed owner);
@@ -26,36 +26,36 @@ contract AccessControl {
         _;
     }
 
-    modifier ownerExists(address owner) {
-        require(isOwner[owner] == true, "Owner already exists");
+    modifier ownerExists(address _owner) {
+        require(isOwner[_owner] == true, "Owner already exists");
         _;
     }
 
-    modifier ownerNotExists(address owner) {
-        require(isOwner[owner] == false, "Owner does not exist");
+    modifier ownerNotExists(address _owner) {
+        require(isOwner[_owner] == false, "Owner does not exist");
         _;
     }
 
     constructor(address[] memory _owners) {
         superadmin = msg.sender;
-        require(owners.length >= 4, "Atleast 4 owners required");
-        _owners = owners;
+        require(_owners.length >= 4, "Atleast 4 owners required");
+        owners = _owners;
     }
 
     function addOwner(
-        address owner
-    ) public onlyAdmin notNull(owner) ownerNotExists(owner) {
-        owners.push(owner);
-        isOwner[owner] == true;
+        address _owner
+    ) public onlyAdmin notNull(_owner) ownerNotExists(_owner) {
+        owners.push(_owner);
+        isOwner[_owner] == true;
 
-        emit OwnerAddition(owner);
+        emit OwnerAddition(_owner);
     }
 
     function removeOwner(
-        address owner
-    ) public onlyAdmin notNull(owner) ownerNotExists(owner) {
+        address _owner
+    ) public onlyAdmin notNull(_owner) ownerNotExists(_owner) {
         for (uint256 i = 0; i < owners.length - 1; i++) {
-            if (owners[i] == owner) {
+            if (owners[i] == _owner) {
                 owners[i] = owners[owners.length - 1];
                 break;
             }
